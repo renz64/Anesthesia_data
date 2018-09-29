@@ -1,0 +1,114 @@
+---
+title: "Mouse behavioral assay - LORR"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+ I am Renjini Ramadasan Nair. The following is a snippet of the R-code I had wrritten to analyze mouse behavioral data pertaining to my project. To summarize, the mice (N>=6) were subjected to increasing concentrations of volatile anesthesia (ISO or HAL) and their induction and emergence EC50s recorded, for the righting reflex assay. The change between induction and emergence concentrations are plotted as bar, whisker and scatter plots, followed by significance analysis by T-test. This data has been published as part of a research paper in the journal of Anesthesiology. 
+
+```{r}
+
+library (ggplot2)
+library(gridExtra)
+library (forcats)
+library (readxl)
+
+```
+
+```{r}
+# Import the excel sheet as a data frame
+
+lorr1 = as.data.frame (read_excel("together.xls", sheet = "lorr1"))
+
+lorr1[, 1:2] = data.frame(apply(lorr1[, 1:2], 2, as.factor))
+
+lorr1$genotype <- factor(lorr1$genotype, levels = c('Ctrl', 'AKO'))
+str(lorr1)
+
+```
+
+```{r}
+# Plot the mean for the control and mutant (AKO) mice with ISO and HAL (error = SD)
+lorr1plot = ggplot (lorr1, aes(x=anesthetic, y=change, fill = genotype)) + 
+  theme_classic() + 
+  stat_summary(geom = "col", fun.y=mean, aes (fill=genotype), position = position_dodge(width = 1)) + 
+  labs (y= expression (Delta~"Anesthetic Concentration"), x=element_blank(), fill=element_blank(), title = "Change in the induction versus emergence EC50s") +
+  scale_fill_manual(values = c("black", "red"))+ 
+  stat_summary(fun.ymin = function(x) mean(x)*0.5,fun.ymax = function(x) mean(x) + sd(x), position = position_dodge(width = 1), width = 0.2, size= 1.5, geom = 'errorbar', aes(color = genotype)) + 
+  guides (color = "none") + 
+  scale_color_manual(values = c("black", "red")) +
+  scale_x_discrete(limits=c("ISO","HAL")) + 
+  scale_y_continuous(limits = c(-0.1, 0.60), breaks = seq(-0.1, 0.60, 0.20))
+
+lorr1plot
+
+```
+
+```{r}
+# Save the plot as a png file
+
+ggsave (filename = "lorr1plot1.png", plot = lorr1plot, dpi = 600, width = 4.5, height = 4, units = "in")
+
+```
+
+
+
+```{r}
+# Data plotted as boxplots (error bars = SD)
+
+lorr1whiskerplot = ggplot (lorr1, aes(x=anesthetic, y=change, color = genotype)) + theme_classic() + 
+geom_boxplot(position = position_dodge(width = 1)) + 
+labs (y= expression (Delta~"Anesthetic Concentration"), x=element_blank(), title = "Change in the induction versus emergence EC50s") + 
+stat_summary(fun.data = mean_sdl, geom = "errorbar", fun.args=list (mult=1), aes (color = genotype),  width = 0.2, position = position_dodge(width = 1)) + scale_color_manual(values = c("black", "red")) + scale_x_discrete(limits=c("ISO","HAL")) + 
+scale_y_continuous(limits = c(-0.20, 0.60), breaks = seq(-0.20, 0.60, 0.20))
+
+lorr1whiskerplot
+
+```
+
+```{r}
+ggsave (filename = "lorr1scatterplot1.png", plot = lorr1whiskerplot, dpi = 600, width = 4.5, height = 4, units = "in")
+
+```
+
+
+
+```{r}
+# Data plotted as scatter plots (error bars = SD)
+
+lorr1scatterplot = ggplot (lorr1, aes(x=anesthetic, y=change, color = genotype)) + theme_classic() + 
+geom_point(position = position_dodge(width = 1)) + 
+labs (y= expression (Delta~"Anesthetic Concentration"), x=element_blank(), title = "Change in the induction versus emergence EC50s") + 
+stat_summary(fun.data = mean_sdl, geom = "errorbar", fun.args=list (mult=1), aes (color = genotype),  width = 0.2, position = position_dodge(width = 1)) + scale_color_manual(values = c("black", "red")) + scale_x_discrete(limits=c("ISO","HAL")) + 
+scale_y_continuous(limits = c(-0.20, 0.60), breaks = seq(-0.20, 0.60, 0.20))
+
+lorr1scatterplot
+
+```
+
+```{r}
+ggsave (filename = "lorr1scatterplot1.png", plot = lorr1scatterplot, dpi = 600, width = 4.5, height = 4, units = "in")
+
+```
+
+
+
+```{r}
+# Calculate the statistical significance for the ISO data by performing a two-tailed T-test.
+
+lorr1iso = lorr1[lorr1$anesthetic == 'ISO', ]
+lorr1isot=t.test(change ~ genotype, data=lorr1iso, var.equal = TRUE)
+lorr1isot
+```
+
+
+```{r}
+# Calculate the statistical significance for the HAL data by performing a two-tailed T-test.
+
+lorr1hal = lorr1[lorr1$anesthetic == 'HAL', ]
+lorr1halt=t.test(change ~ genotype, data=lorr1hal, var.equal = TRUE)
+lorr1halt
+```
+
+
